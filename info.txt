@@ -1,0 +1,171 @@
+///////////
+package.json
+{
+    "name": "js-dev-enviroment",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        /* open application, start open and test in parallel */
+        "open": "node buildTools/srcServer.js",
+        "start": "npm-run-all --parallel open test",
+        "test": "jest --watch"
+    },
+    "author": "mrtarunkumar",
+    "license": "ISC",
+    
+    /* packages */
+    "dependencies": {
+        /* transpile js */
+        "babel-core": "^6.26.0",
+        "babel-loader": "^7.1.2",
+        "babel-preset-env": "^1.6.1",
+        
+        /* linting */
+        "eslint": "^4.15.0",
+        "eslint-loader": "^1.9.0",
+        
+        /* web server */
+        "express": "^4.16.2",
+        
+        /* automated testing */
+        "jest": "^22.0.4",
+        
+        /* run multiple scripts  */
+        "npm-run-all": "^4.1.2",
+        
+        /* open items in the browser */
+        "open": "0.0.5",
+        
+        /* build tool and web server */
+        "webpack": "^3.10.0",
+        "webpack-dev-middleware": "^2.0.4",
+        "webpack-hot-middleware": "^2.21.0"
+    },
+    
+    /* configure eslint */
+    "eslintConfig": {
+        /* built in setting */
+        "extends": ["eslint:recommended"],
+        "parserOptions": {
+            "ecmaVersion": 6,
+            "sourceType": "module"
+        },
+        "env": {
+            "browser": true,
+            "jest": true
+        },
+        "rules": {
+            "no-console": "off",
+            "no-debugger": "warn"
+        }
+    },
+    
+    /* configure babel */ 
+    "babel": {
+        /* use preset */
+        "presets": ["env"]
+    }
+}
+
+
+///////////
+webpack.config.js
+/* webpack used as a build tool */
+var webpack = require('webpack');
+var path = require('path');
+
+
+module.exports = {
+    devtool: 'cheap-module-eval-source-map',
+    target: 'web',
+    
+    /* entry point start of the application */
+    entry: [
+        /* reload page with any changes with plugin */
+        'webpack-hot-middleware/client/?reload=true',
+        path.resolve(__dirname, 'src/index.js')
+    ],
+    
+    /* output point  */
+    output: {
+        path: path.resolve(__dirname, 'src'),
+        filename: 'bundle.js'
+    },
+    
+    /* extend webpack with plugins */
+    plugins: [
+        new webpack.HotModuleReplacementPlugin()
+    ],
+    
+    /* modules */
+    module: {
+        loaders: [
+            {
+                /* find any js files and run  babel and eslint, but exclude node modules */
+                test: /\.js$/,
+                exclude: /node_modules/,
+                loaders: ['babel-loader', 'eslint-loader']
+            }
+        ]
+    }
+};
+
+
+///////////
+srcServer
+/* express used as a web server */
+var express = require('express');
+
+/* integrate webpack with express */
+var webpack = require('webpack'); 
+var path = require('path');
+var config = require('../webpack.config');
+var open = require('open');
+
+var port = 3000;
+var app = express();
+var compiler = webpack(config);
+
+/* tell express to use webpacks hot reloaders */
+app.use(require('webpack-dev-middleware')(compiler, {
+    noInfo: true
+}));
+app.use(require('webpack-hot-middleware')(compiler));
+
+/* single route - single page application */ 
+app.get('*', function (req, res) {
+    res.sendFile(path.join(__dirname, '../src/index.html'));
+})
+
+/* start application */
+app.listen(port, function (err) {
+    if (err) {
+        console.log(err);
+    } else {
+        open(`http://localhost:${port}`);
+    }
+});
+
+
+///////////
+index.js - added for testing
+const sayHi = () => {
+    console.log("hello world");
+}
+
+export function add(a,b){
+    return a+b;
+}
+
+sayHi();
+
+///////////
+index.test.js
+/* call the add function from index.js */
+/* add 2 numbers and expect it to be equal to 2 */
+import {add} from './index';
+
+test('1 + 1 to equal 2', () => {
+    expect(add(1,1)).toBe(2);
+})
